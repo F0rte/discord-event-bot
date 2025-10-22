@@ -1,12 +1,12 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
+import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda"
 import { verifyRequest } from "./services/discord.js"
 
 /**
  * Lambda handler
  */
 export const handler = async (
-    event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+    event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
     // Header, Body取得
     const signature = event.headers["x-signature-ed25519"] || "";
     const timestamp = event.headers["x-signature-timestamp"] || "";

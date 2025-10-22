@@ -55,7 +55,7 @@ Resources:
       ApiId: !Ref HttpApi
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt DiscordBotFunction.Arn
-      PayloadFormatVersion: "1.0"
+      PayloadFormatVersion: "2.0"
 
   HttpApiRoute:
     Type: AWS::ApiGatewayV2::Route
