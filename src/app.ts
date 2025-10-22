@@ -1,0 +1,46 @@
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
+import { verifyRequest } from "./services/discord.js"
+
+/**
+ * Lambda handler
+ */
+export const handler = async (
+    event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+    // Header, Body取得
+    const signature = event.headers["x-signature-ed25519"] || "";
+    const timestamp = event.headers["x-signature-timestamp"] || "";
+    const rawBody = event.body || "";
+
+    // 署名検証
+    const isValid = await verifyRequest(rawBody, signature, timestamp);
+    if (!isValid) {
+        return {
+            statusCode: 401,
+            body: "Invalid signature",
+        };
+    }
+
+    // PINGへの応答 (type = 1)
+    const body = JSON.parse(rawBody);
+    if (body.type === 1) {
+        return {
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: 1 }),
+        };
+    }
+
+    // Requestへの応答
+    // fixme: MVP実装
+    return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            type: 4,
+            data: {
+                content: "test",
+            },
+        }),
+    };
+};
