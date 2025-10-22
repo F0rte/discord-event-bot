@@ -26,6 +26,7 @@ export const handler = async (
     try {
         body = JSON.parse(rawBody);
     } catch (err) {
+        console.error("Bad Request:", err)
         return {
             statusCode: 400,
             body: "Bad Request"
