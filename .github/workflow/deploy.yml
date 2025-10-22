@@ -10,6 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
 
     permissions:
       id-token: write
@@ -39,8 +40,8 @@ jobs:
       - name: Package with CloudFormation
         run: |
           aws cloudformation package \
-            --template-file infrastructure/cloudformation.yml \
-            --s3-bucket ${{ secrets.S3_ARTIFACT_BUCKET_NAME }}
+            --template-file infrastructure/template.yml \
+            --s3-bucket ${{ secrets.S3_ARTIFACT_BUCKET_NAME }} \
             --output-template-file packaged.yml
 
       - name: Deploy with CloudFormation

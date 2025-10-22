@@ -21,8 +21,18 @@ export const handler = async (
         };
     }
 
+    // Bodyの形式チェック
+    let body;
+    try {
+        body = JSON.parse(rawBody);
+    } catch (err) {
+        return {
+            statusCode: 400,
+            body: "Bad Request"
+        }
+    }
+
     // PINGへの応答 (type = 1)
-    const body = JSON.parse(rawBody);
     if (body.type === 1) {
         return {
             statusCode: 200,

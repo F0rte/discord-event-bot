@@ -37,6 +37,8 @@ Resources:
       Runtime: nodejs18.x
       Role: !GetAtt LambdaExecutionRole.Arn
       Code: ./dist
+      Timeout: 30
+      MemorySize: 128
       Environment:
         Variables:
           DISCORD_PUBLIC_KEY: !Ref DiscordPublicKey
@@ -59,7 +61,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref HttpApi
-      RouteKey: "Post /"
+      RouteKey: "POST /"
       Target: !Join ["/", ["integrations", !Ref HttpApiIntegration]]
 
   HttpApiStage:
