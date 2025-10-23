@@ -37,6 +37,13 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Install production dependencies in dist
+        run: |
+          cp package.json package-lock.json dist/
+          cd dist
+          npm ci --production
+          cd ..
+
       - name: Package with CloudFormation
         run: |
           aws cloudformation package \
