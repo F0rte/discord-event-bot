@@ -37,6 +37,9 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Copy node_modules to dist
+        run: cp -r node_modules dist/
+
       - name: Package with CloudFormation
         run: |
           aws cloudformation package \
