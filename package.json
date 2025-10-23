@@ -1,0 +1,21 @@
+{
+  "name": "discord-event-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Discordチャンネルにイベントを登録・一覧表示・削除するためのBotです。 AWS Lambda, Amazon API Gateway, Amazon DynamoDB を使用して構築されています。",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord-interactions": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.156",
+    "@types/node": "^24.9.1",
+    "typescript": "^5.9.3"
+  }
+}
