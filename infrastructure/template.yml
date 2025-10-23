@@ -36,7 +36,7 @@ Resources:
       Handler: app.handler
       Runtime: nodejs18.x
       Role: !GetAtt LambdaExecutionRole.Arn
-      Code: ./dist
+      Code: ../dist
       Timeout: 30
       MemorySize: 128
       Environment:
