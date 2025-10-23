@@ -5,7 +5,7 @@
   "description": "Discordチャンネルにイベントを登録・一覧表示・削除するためのBotです。 AWS Lambda, Amazon API Gateway, Amazon DynamoDB を使用して構築されています。",
   "main": "dist/app.js",
   "scripts": {
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && tsc && echo '{\\\"type\\\": \\\"module\\\"}' > dist/package.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
