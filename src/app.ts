@@ -88,35 +88,54 @@ export const handler = async (
                     const adminChannelId = options.admin_channel;
                     const publicChannelId = options.public_channel;
                     
+                    console.log(`Setup command started: adminChannel=${adminChannelId}, publicChannel=${publicChannelId}`);
+                    
                     // 一時応答
                     const setupPromise = (async () => {
                         try {
                             await createDashboardMessagesAndSaveConfig(adminChannelId, publicChannelId);
                             
                             // インタラクション応答を更新
+                            console.log("Updating interaction response with success message");
                             await editInteractionResponse(
                                 body.token,
                                 "✅ ダッシュボードのセットアップが完了しました！"
                             );
+                            console.log("Setup process completed successfully");
                         } catch (err) {
                             console.error("Setup error:", err);
+                            console.error("Error stack:", err instanceof Error ? err.stack : "No stack trace");
+                            
                             let errorMessage = "❌ セットアップ中にエラーが発生しました。";
                             
                             // より具体的なエラーメッセージを提供
                             if (err instanceof Error) {
+                                console.error("Error message:", err.message);
                                 if (err.message.includes('sendMessage') || err.message.includes('channels')) {
                                     errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
                                 } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
                                     errorMessage = "❌ 設定の保存に失敗しました。";
+                                } else if (err.message.includes('SSM') || err.message.includes('token')) {
+                                    errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
+                                } else if (err.message.includes('timeout') || err.message.includes('Lambda')) {
+                                    errorMessage = "❌ 処理がタイムアウトしました。管理者に連絡してください。";
                                 }
+                                
+                                // 開発用の詳細エラー情報（本番では削除を推奨）
+                                errorMessage += `\n詳細: ${err.message.substring(0, 100)}`;
                             }
                             
-                            await editInteractionResponse(body.token, errorMessage);
+                            try {
+                                await editInteractionResponse(body.token, errorMessage);
+                            } catch (editErr) {
+                                console.error("Failed to edit interaction response:", editErr);
+                            }
                         }
                     })();
                     
                     // 即座に応答し、バックグラウンドで処理を継続
-                    setImmediate(() => { setupPromise.catch(console.error); });
+                    // setImmediateではなくPromiseで処理を継続
+                    setupPromise.catch(console.error);
                     
                     return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
@@ -292,25 +311,44 @@ const createDashboardMessagesAndSaveConfig = async (
     adminChannelId: string,
     publicChannelId: string
 ): Promise<void> => {
+    console.log("Creating dashboard messages...");
+    
     // 管理者用ダッシュボード作成
+    console.log(`Sending admin dashboard message to channel: ${adminChannelId}`);
     const adminMessage = await sendMessage(
         adminChannelId, 
         "🔧 管理者用イベント一覧を読み込み中...", 
         4 // SUPPRESS_EMBEDS
     );
+    console.log(`Admin message created with ID: ${adminMessage.id}`);
+    
+    console.log("Saving admin dashboard config...");
     await saveConfig(ADMIN_DASHBOARD_CONFIG, adminChannelId, adminMessage.id);
+    console.log("Admin dashboard config saved");
     
     // 全体用ダッシュボード作成
+    console.log(`Sending public dashboard message to channel: ${publicChannelId}`);
     const publicMessage = await sendMessage(
         publicChannelId, 
         "📅 イベント一覧を読み込み中...", 
         4 // SUPPRESS_EMBEDS
     );
+    console.log(`Public message created with ID: ${publicMessage.id}`);
+    
+    console.log("Saving public dashboard config...");
     await saveConfig(PUBLIC_DASHBOARD_CONFIG, publicChannelId, publicMessage.id);
+    console.log("Public dashboard config saved");
     
     // ダッシュボード更新
+    console.log("Updating admin dashboard...");
     await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+    console.log("Admin dashboard updated");
+    
+    console.log("Updating public dashboard...");
     await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
+    console.log("Public dashboard updated");
+    
+    console.log("Dashboard setup completed successfully");
 };
 
 /**
