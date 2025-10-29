@@ -25,10 +25,9 @@ export const handler = async (
     event: APIGatewayProxyEventV2,
     context: any
 ): Promise<APIGatewayProxyResultV2> => {
-    // Lambda関数が応答を返した後にバックグラウンドで処理を継続するように設定
-    // false: イベントループに未解決のPromiseがあってもLambdaが終了を許可
-    // true: すべてのPromiseが解決されるまでLambdaの終了を待機（デフォルト）
-    context.callbackWaitsForEmptyEventLoop = false;
+    // Lambda関数がすべてのPromiseの完了を待機するように設定
+    // これにより、DEFERRED応答後のバックグラウンド処理が確実に完了する
+    context.callbackWaitsForEmptyEventLoop = true;
     
     // Header, Body取得
     const signature = event.headers["x-signature-ed25519"] || "";
