@@ -9,6 +9,9 @@ on:
     paths:
       - "src/constants/commands.ts"
       - "src/services/registerCommands.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/register-commands.yml"
 
 jobs:
   register:
