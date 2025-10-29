@@ -78,9 +78,11 @@ export const updateEvent = async (id: string, updates: Partial<EventOptions>): P
         return null;
     }
     
+    // Exclude immutable fields (id, createdAt) from updates to prevent overwriting
+    const { id: _id, createdAt: _createdAt, ...safeUpdates } = updates as any;
     const updatedEvent: Event = {
         ...existingEvent,
-        ...updates
+        ...safeUpdates
     };
     
     const command = new PutCommand({

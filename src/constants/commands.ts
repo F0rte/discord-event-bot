@@ -23,7 +23,7 @@ export const DISCORD_COMMANDS = [
                     },
                     {
                         name: "location",
-                        description: "イベントの場所（または vcチャンネルリンク)",
+                        description: "イベントの場所（または vc チャンネルリンク)",
                         type: 3, // STRING
                         required: false
                     },

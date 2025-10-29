@@ -263,7 +263,7 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
         let eventText = `## **${event.title}**\n:calendar: ${event.datetime}`;
         if (isAdmin) {
             eventText += `\nID: \`${event.id}\``;
-            return eventText;
+            return eventText; // early return for admin
         }
         if (event.location) {
             eventText += `\n:globe_with_meridians: ${event.location}`;
