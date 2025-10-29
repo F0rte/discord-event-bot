@@ -11,6 +11,7 @@ on:
       - "src/services/registerCommands.ts"
       - "package.json"
       - "package-lock.json"
+      - ".github/workflows/register-commands.yml"
 
 jobs:
   register:
