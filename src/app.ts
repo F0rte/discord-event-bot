@@ -205,13 +205,14 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
     actualEvents.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
 
     let content = isAdmin 
-        ? "**🔧 管理者用イベント一覧**\n\n" 
-        : "**📅 イベント一覧**\n\n";
+        ? "# **🔧 管理者用イベント一覧**\n\n" 
+        : "# **:loudspeaker: イベント一覧**\n\n";
 
     content += actualEvents.map((event) => {
         let eventText = `## **${event.title}**\n:calendar: ${event.datetime}`;
         if (isAdmin) {
             eventText += `\nID: \`${event.id}\``;
+            return eventText;
         }
         if (event.url) {
             eventText += `\n${event.url}`;
