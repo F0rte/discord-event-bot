@@ -212,6 +212,7 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
         let eventText = `## **${event.title}**\n:calendar: ${event.datetime}`;
         if (isAdmin) {
             eventText += `\nID: \`${event.id}\``;
+            return eventText;
         }
         if (event.url) {
             eventText += `\n${event.url}`;
