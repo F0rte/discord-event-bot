@@ -9,8 +9,7 @@ const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
 const ADMIN_DASHBOARD_CONFIG = 'admin_dashboard_config';
 const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
 
-// バックグラウンド処理を追跡するためのPromiseストレージ
-const backgroundTasks: Promise<void>[] = [];
+
 
 /**
  * Lambda handler
@@ -26,8 +25,9 @@ export const handler = async (
     event: APIGatewayProxyEventV2,
     context: any
 ): Promise<APIGatewayProxyResultV2> => {
-    // Lambda関数がイベントループを待機しないように設定
-    // これにより、バックグラウンド処理が完了前にLambdaが終了することを防ぐ
+    // Lambda関数が応答を返した後にバックグラウンドで処理を継続するように設定
+    // false: イベントループに未解決のPromiseがあってもLambdaが終了を許可
+    // true: すべてのPromiseが解決されるまでLambdaの終了を待機（デフォルト）
     context.callbackWaitsForEmptyEventLoop = false;
     
     // Header, Body取得
@@ -132,8 +132,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // バックグラウンド処理を追跡
-                    backgroundTasks.push(setupPromise.catch(console.error));
+                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
+                    setupPromise.catch(console.error);
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -174,8 +174,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // バックグラウンド処理を追跡
-                    backgroundTasks.push(addPromise.catch(console.error));
+                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
+                    addPromise.catch(console.error);
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -222,8 +222,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // バックグラウンド処理を追跡
-                    backgroundTasks.push(deletePromise.catch(console.error));
+                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
+                    deletePromise.catch(console.error);
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -244,11 +244,6 @@ export const handler = async (
         }
     }
 
-    // 未完了のバックグラウンド処理があれば警告
-    if (backgroundTasks.length > 0) {
-        console.log(`Background tasks running: ${backgroundTasks.length}`);
-    }
-    
     return { statusCode: 404, body: "Not Found" };
 };
 
