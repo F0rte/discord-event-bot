@@ -12,6 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.919.0",
+    "@aws-sdk/lib-dynamodb": "^3.919.0",
     "discord-interactions": "^4.4.0"
   },
   "devDependencies": {
