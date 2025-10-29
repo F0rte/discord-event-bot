@@ -9,6 +9,9 @@ const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
 const ADMIN_DASHBOARD_CONFIG = 'admin_dashboard_config';
 const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
 
+// バックグラウンド処理を管理するPromise配列
+let pendingTasks: Promise<any>[] = [];
+
 
 
 /**
@@ -131,8 +134,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
-                    setupPromise.catch(console.error);
+                    // Lambdaが待機するようにPromiseを登録
+                    pendingTasks.push(setupPromise.catch(console.error));
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -173,8 +176,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
-                    addPromise.catch(console.error);
+                    // Lambdaが待機するようにPromiseを登録
+                    pendingTasks.push(addPromise.catch(console.error));
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -221,8 +224,8 @@ export const handler = async (
                         }
                     })();
                     
-                    // エラーハンドリングのみ実行（バックグラウンドで処理継続）
-                    deletePromise.catch(console.error);
+                    // Lambdaが待機するようにPromiseを登録
+                    pendingTasks.push(deletePromise.catch(console.error));
                     
                     // 即座にDEFERRED応答を返す（3秒ルール対応）
                     return buildResponse({
@@ -243,6 +246,12 @@ export const handler = async (
         }
     }
 
+    // すべてのバックグラウンドタスクの完了を待機
+    if (pendingTasks.length > 0) {
+        await Promise.allSettled(pendingTasks);
+        pendingTasks = []; // 次回実行用にリセット
+    }
+    
     return { statusCode: 404, body: "Not Found" };
 };
 
