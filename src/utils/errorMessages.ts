@@ -2,7 +2,7 @@
  * エラーメッセージ生成のユーティリティ関数
  */
 
-export type ErrorContext = 'setup' | 'add' | 'delete';
+export type ErrorContext = 'setup' | 'add' | 'delete' | 'update';
 
 /**
  * エラーの種類とコンテキストに基づいて詳細なエラーメッセージを生成する
@@ -16,7 +16,8 @@ export const getDetailedErrorMessage = (err: unknown, context: ErrorContext): st
     const defaultMessages = {
         setup: "❌ セットアップ中にエラーが発生しました。",
         add: "❌ イベント追加中にエラーが発生しました。",
-        delete: "❌ イベント削除中にエラーが発生しました。"
+        delete: "❌ イベント削除中にエラーが発生しました。",
+        update: "❌ イベント更新中にエラーが発生しました。"
     };
 
     if (!(err instanceof Error)) {
@@ -46,6 +47,8 @@ export const getDetailedErrorMessage = (err: unknown, context: ErrorContext): st
             return "❌ イベントの保存に失敗しました。";
         } else if (context === 'delete') {
             return "❌ イベントの削除に失敗しました。";
+        } else if (context === 'update') {
+            return "❌ イベントの更新に失敗しました。";
         }
     }
 

@@ -54,6 +54,43 @@ export const DISCORD_COMMANDS = [
                 ]
             },
             {
+                name: "update",
+                description: "既存のイベントを更新",
+                type: 1, // SUB_COMMAND
+                options: [
+                    {
+                        name: "event_id",
+                        description: "更新するイベントのID",
+                        type: 3, // STRING
+                        required: true
+                    },
+                    {
+                        name: "title",
+                        description: "新しいタイトル（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "datetime",
+                        description: "新しい日時（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "url",
+                        description: "新しいURL（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "message_link",
+                        description: "新しいメッセージリンク（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    }
+                ]
+            },
+            {
                 name: "setup",
                 description: "イベント一覧ダッシュボードをセットアップ",
                 type: 1, // SUB_COMMAND

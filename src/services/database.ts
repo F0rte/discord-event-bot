@@ -58,6 +58,40 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
 };
 
 /**
+ * 特定のイベントを取得
+ */
+export const getEvent = async (id: string): Promise<Event | null> => {
+    const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { id },
+    });
+    const response = await docClient.send(command);
+    return (response.Item as Event) || null;
+};
+
+/**
+ * イベント更新
+ */
+export const updateEvent = async (id: string, updates: Partial<EventOptions>): Promise<Event | null> => {
+    const existingEvent = await getEvent(id);
+    if (!existingEvent) {
+        return null;
+    }
+    
+    const updatedEvent: Event = {
+        ...existingEvent,
+        ...updates
+    };
+    
+    const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: updatedEvent,
+    });
+    await docClient.send(command);
+    return updatedEvent;
+};
+
+/**
  * 設定を取得
  */
 export const getConfig = async (configId: string): Promise<{ channelId: string; messageId: string } | null> => {
