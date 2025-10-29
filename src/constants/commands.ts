@@ -22,6 +22,12 @@ export const DISCORD_COMMANDS = [
                         required: true
                     },
                     {
+                        name: "location",
+                        description: "イベントの場所（または vcチャンネルリンク)",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
                         name: "url",
                         description: "イベントのURL",
                         type: 3, // STRING
@@ -73,6 +79,12 @@ export const DISCORD_COMMANDS = [
                     {
                         name: "datetime",
                         description: "新しい日時（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "location",
+                        description: "新しい場所（省略可）",
                         type: 3, // STRING
                         required: false
                     },

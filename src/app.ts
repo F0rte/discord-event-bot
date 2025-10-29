@@ -265,6 +265,9 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
             eventText += `\nID: \`${event.id}\``;
             return eventText;
         }
+        if (event.location) {
+            eventText += `\n:globe_with_meridians: ${event.location}`;
+        }
         if (event.url) {
             eventText += `\n${event.url}`;
         }
