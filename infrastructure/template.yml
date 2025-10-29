@@ -45,7 +45,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: app.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs20.x
       Role: !GetAtt LambdaExecutionRole.Arn
       Code: ../dist
       Timeout: 30
