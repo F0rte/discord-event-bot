@@ -44,7 +44,7 @@ export const sendMessage = async (
 ): Promise<{ id: string }> => {
     const botToken = await getBotToken();
     
-    const payload: any = { content };
+    const payload: { content: string; flags?: number } = { content };
     if (flags !== undefined) {
         payload.flags = flags;
     }
@@ -98,6 +98,10 @@ export const editInteractionResponse = async (
     interactionToken: string,
     content: string
 ): Promise<void> => {
+    if (!process.env.DISCORD_APPLICATION_ID) {
+        throw new Error("DISCORD_APPLICATION_ID is not set.");
+    }
+    
     const botToken = await getBotToken();
     
     const response = await fetch(`https://discord.com/api/v10/webhooks/${process.env.DISCORD_APPLICATION_ID}/${interactionToken}/messages/@original`, {

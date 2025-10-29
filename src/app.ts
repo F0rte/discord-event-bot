@@ -4,8 +4,20 @@ import { addEvent, deleteEvent, listEvents, getConfig, saveConfig } from "./serv
 import { InteractionResponseType } from "discord-interactions";
 import type { EventOptions, Event } from "./types.js";
 
+// 定数定義
+const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
+const ADMIN_DASHBOARD_CONFIG = 'admin_dashboard_config';
+const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
+
 /**
  * Lambda handler
+ * Discord Interactionを受信し、適切なコマンドハンドラーにルーティングする
+ * 
+ * サポートするコマンド:
+ * - /events list: イベント一覧を表示
+ * - /events setup: ダッシュボードをセットアップ
+ * - /events add: イベントを追加し、ダッシュボードを更新
+ * - /events delete: イベントを削除し、ダッシュボードを更新
  */
 export const handler = async (
     event: APIGatewayProxyEventV2
@@ -79,25 +91,7 @@ export const handler = async (
                     // 一時応答
                     const setupPromise = (async () => {
                         try {
-                            // 管理者用ダッシュボード作成
-                            const adminMessage = await sendMessage(
-                                adminChannelId, 
-                                "🔧 管理者用イベント一覧を読み込み中...", 
-                                4 // SUPPRESS_EMBEDS
-                            );
-                            await saveConfig('admin_dashboard_config', adminChannelId, adminMessage.id);
-                            
-                            // 全体用ダッシュボード作成
-                            const publicMessage = await sendMessage(
-                                publicChannelId, 
-                                "📅 イベント一覧を読み込み中...", 
-                                4 // SUPPRESS_EMBEDS
-                            );
-                            await saveConfig('public_dashboard_config', publicChannelId, publicMessage.id);
-                            
-                            // ダッシュボード更新
-                            await updateDashboardMessage('admin_dashboard_config');
-                            await updateDashboardMessage('public_dashboard_config');
+                            await createDashboardMessagesAndSaveConfig(adminChannelId, publicChannelId);
                             
                             // インタラクション応答を更新
                             await editInteractionResponse(
@@ -106,15 +100,23 @@ export const handler = async (
                             );
                         } catch (err) {
                             console.error("Setup error:", err);
-                            await editInteractionResponse(
-                                body.token,
-                                "❌ セットアップ中にエラーが発生しました。"
-                            );
+                            let errorMessage = "❌ セットアップ中にエラーが発生しました。";
+                            
+                            // より具体的なエラーメッセージを提供
+                            if (err instanceof Error) {
+                                if (err.message.includes('sendMessage') || err.message.includes('channels')) {
+                                    errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
+                                } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
+                                    errorMessage = "❌ 設定の保存に失敗しました。";
+                                }
+                            }
+                            
+                            await editInteractionResponse(body.token, errorMessage);
                         }
                     })();
                     
                     // 即座に応答し、バックグラウンドで処理を継続
-                    setImmediate(() => setupPromise);
+                    setImmediate(() => { setupPromise.catch(console.error); });
                     
                     return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
@@ -133,8 +135,8 @@ export const handler = async (
                             const newEvent = await addEvent(options);
                             
                             // ダッシュボード更新
-                            await updateDashboardMessage('admin_dashboard_config');
-                            await updateDashboardMessage('public_dashboard_config');
+                            await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+                            await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
                             
                             // インタラクション応答を更新
                             await editInteractionResponse(
@@ -151,7 +153,7 @@ export const handler = async (
                     })();
                     
                     // 即座に応答し、バックグラウンドで処理を継続
-                    setImmediate(() => addPromise);
+                    setImmediate(() => { addPromise.catch(console.error); });
                     
                     return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
@@ -176,8 +178,8 @@ export const handler = async (
                             await deleteEvent(id);
                             
                             // ダッシュボード更新
-                            await updateDashboardMessage('admin_dashboard_config');
-                            await updateDashboardMessage('public_dashboard_config');
+                            await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+                            await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
                             
                             // インタラクション応答を更新
                             await editInteractionResponse(
@@ -194,7 +196,7 @@ export const handler = async (
                     })();
                     
                     // 即座に応答し、バックグラウンドで処理を継続
-                    setImmediate(() => deletePromise);
+                    setImmediate(() => { deletePromise.catch(console.error); });
                     
                     return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
@@ -219,12 +221,15 @@ export const handler = async (
 
 /**
  * イベント一覧をフォーマットして返す共通関数
+ * 
+ * @param isAdmin - 管理者表示かどうか（trueの場合はイベントIDも表示）
+ * @returns フォーマット済みのイベント一覧文字列
  */
 const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
     const events = await listEvents();
     
     // 設定IDで始まるアイテムは除外（実際のイベントのみを表示）
-    const actualEvents = events.filter(item => !item.id.endsWith('_dashboard_config'));
+    const actualEvents = events.filter(item => !item.id.endsWith(DASHBOARD_CONFIG_SUFFIX));
     
     if (actualEvents.length === 0) {
         return ":information_source: 登録されているイベントはありません。";
@@ -256,6 +261,8 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
 
 /**
  * 指定されたダッシュボードメッセージを更新する共通関数
+ * 
+ * @param configId - 設定ID（ADMIN_DASHBOARD_CONFIG または PUBLIC_DASHBOARD_CONFIG）
  */
 const updateDashboardMessage = async (configId: string): Promise<void> => {
     const config = await getConfig(configId);
@@ -264,7 +271,7 @@ const updateDashboardMessage = async (configId: string): Promise<void> => {
         return;
     }
 
-    const isAdmin = configId === 'admin_dashboard_config';
+    const isAdmin = configId === ADMIN_DASHBOARD_CONFIG;
     const content = await generateEventListContent(isAdmin);
     
     try {
@@ -272,6 +279,38 @@ const updateDashboardMessage = async (configId: string): Promise<void> => {
     } catch (err) {
         console.error(`Failed to update dashboard ${configId}:`, err);
     }
+};
+
+/**
+ * ダッシュボードメッセージを作成して設定を保存するヘルパー関数
+ * 管理者用と全体用の両方のダッシュボードを作成し、初期コンテンツで更新する
+ * 
+ * @param adminChannelId - 管理者用ダッシュボードを作成するチャンネルID
+ * @param publicChannelId - 全体用ダッシュボードを作成するチャンネルID
+ */
+const createDashboardMessagesAndSaveConfig = async (
+    adminChannelId: string,
+    publicChannelId: string
+): Promise<void> => {
+    // 管理者用ダッシュボード作成
+    const adminMessage = await sendMessage(
+        adminChannelId, 
+        "🔧 管理者用イベント一覧を読み込み中...", 
+        4 // SUPPRESS_EMBEDS
+    );
+    await saveConfig(ADMIN_DASHBOARD_CONFIG, adminChannelId, adminMessage.id);
+    
+    // 全体用ダッシュボード作成
+    const publicMessage = await sendMessage(
+        publicChannelId, 
+        "📅 イベント一覧を読み込み中...", 
+        4 // SUPPRESS_EMBEDS
+    );
+    await saveConfig(PUBLIC_DASHBOARD_CONFIG, publicChannelId, publicMessage.id);
+    
+    // ダッシュボード更新
+    await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+    await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
 };
 
 /**
