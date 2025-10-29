@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda"
-import { verifyRequest, sendMessage, editMessage, editInteractionResponse } from "./services/discord.js"
+import { verifyRequest, sendMessage, editMessage } from "./services/discord.js"
 import { addEvent, deleteEvent, listEvents, getConfig, saveConfig } from "./services/database.js";
 import { InteractionResponseType } from "discord-interactions";
 import type { EventOptions, Event } from "./types.js";
@@ -8,10 +8,6 @@ import type { EventOptions, Event } from "./types.js";
 const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
 const ADMIN_DASHBOARD_CONFIG = 'admin_dashboard_config';
 const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
-
-
-
-
 
 /**
  * Lambda handler
@@ -26,8 +22,6 @@ const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
 export const handler = async (
     event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> => {
-
-    
     // Header, Body取得
     const signature = event.headers["x-signature-ed25519"] || "";
     const timestamp = event.headers["x-signature-timestamp"] || "";
@@ -103,21 +97,9 @@ export const handler = async (
                         });
                     } catch (err) {
                         console.error("Setup error:", err);
-                        
-                        let errorMessage = "❌ セットアップ中にエラーが発生しました。";
-                        if (err instanceof Error) {
-                            if (err.message.includes('sendMessage') || err.message.includes('channels')) {
-                                errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
-                            } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
-                                errorMessage = "❌ 設定の保存に失敗しました。";
-                            } else if (err.message.includes('SSM') || err.message.includes('token')) {
-                                errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
-                            }
-                        }
-                        
                         return buildResponse({
                             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                            data: { content: errorMessage },
+                            data: { content: "❌ セットアップ中にエラーが発生しました。" },
                         });
                     }
                 }
