@@ -64,7 +64,7 @@ export const handler = async (
                     const content = 
                         events.length > 0 
                             ? events.map((e) => `**${e.title}** (${e.datetime})\nID: \`${e.id}\`\n${e.url || ""}\n`).join("\n")
-                            : "登録されているイベントはありません。"
+                            : ":information_source: 登録されているイベントはありません。"
                     return buildResponse({
                         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                         data: { content },
