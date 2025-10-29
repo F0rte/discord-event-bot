@@ -52,6 +52,25 @@ export const DISCORD_COMMANDS = [
                         required: true
                     }
                 ]
+            },
+            {
+                name: "setup",
+                description: "イベント一覧ダッシュボードをセットアップ",
+                type: 1, // SUB_COMMAND
+                options: [
+                    {
+                        name: "admin_channel",
+                        description: "管理者用ダッシュボードを設置するチャンネル",
+                        type: 7, // CHANNEL
+                        required: true
+                    },
+                    {
+                        name: "public_channel",
+                        description: "全体用ダッシュボードを設置するチャンネル",
+                        type: 7, // CHANNEL
+                        required: true
+                    }
+                ]
             }
         ]
     }

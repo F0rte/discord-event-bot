@@ -1,4 +1,3 @@
-import { fetch } from "undici"
 import "dotenv/config"
 import { DISCORD_COMMANDS } from "../constants/commands.js"
 
