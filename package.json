@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc && cp dist-package.json dist/package.json",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "register-commands": "ts-node src/services/registerCommands.ts"
+    "register-commands": "tsx src/services/registerCommands.ts"
   },
   "author": "",
   "license": "ISC",
@@ -18,7 +18,7 @@
     "@types/aws-lambda": "^8.10.156",
     "@types/node": "^24.9.1",
     "dotenv": "^17.2.3",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "undici": "^7.16.0"
   }
