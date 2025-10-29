@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda"
 import { verifyRequest, sendMessage, editMessage } from "./services/discord.js"
-import { addEvent, deleteEvent, listEvents, getConfig, saveConfig } from "./services/database.js";
+import { addEvent, deleteEvent, updateEvent, listEvents, getConfig, saveConfig } from "./services/database.js";
 import { InteractionResponseType } from "discord-interactions";
 import type { EventOptions, Event } from "./types.js";
 import { getDetailedErrorMessage } from "./utils/errorMessages.js";
@@ -168,6 +168,57 @@ export const handler = async (
                         });
                     }
                 }
+
+                if (subCommand === "update") {
+                    const options = body.data.options[0].options.reduce((acc: Record<string, any>, opt: { name: string; value: any }) => {
+                        if (opt.value !== undefined && opt.value !== null && opt.value !== "") {
+                            acc[opt.name] = opt.value;
+                        }
+                        return acc;
+                    }, {});
+                    
+                    const { event_id, ...updateFields } = options;
+                    
+                    if (!event_id) {
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: ":warning: 更新するイベントIDが指定されていません。" },
+                        });
+                    }
+                    
+                    if (Object.keys(updateFields).length === 0) {
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: ":warning: 更新する項目が指定されていません。" },
+                        });
+                    }
+                    
+                    try {
+                        const updatedEvent = await updateEvent(event_id, updateFields);
+                        if (!updatedEvent) {
+                            return buildResponse({
+                                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                                data: { content: ":warning: 指定されたIDのイベントが見つかりません。" },
+                            });
+                        }
+                        
+                        await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+                        await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: `✅ イベント **${updatedEvent.title}** を更新し、ダッシュボードを更新しました (ID: \`${updatedEvent.id}\`)` },
+                        });
+                    } catch (err) {
+                        console.error("Update event error:", err);
+                        const errorMessage = getDetailedErrorMessage(err, 'update');
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: errorMessage },
+                        });
+                    }
+                }
             }
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -212,7 +263,10 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
         let eventText = `## **${event.title}**\n:calendar: ${event.datetime}`;
         if (isAdmin) {
             eventText += `\nID: \`${event.id}\``;
-            return eventText;
+            return eventText; // early return for admin
+        }
+        if (event.location) {
+            eventText += `\n:globe_with_meridians: ${event.location}`;
         }
         if (event.url) {
             eventText += `\n${event.url}`;

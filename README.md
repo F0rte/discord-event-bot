@@ -7,14 +7,24 @@ AWS Lambda, Amazon API Gateway, Amazon DynamoDB を使用して構築されて�
 
 -   **/events list**: 登録されているイベントの一覧を表示します。
 -   **/events add**: 新しいイベントを登録します。
+-   **/events update**: 既存のイベントを更新します。
 -   **/events delete**: 既存のイベントを削除します。
--   **/events update**: (オプション) 既存のイベントを更新します。
+-   **/events setup**: イベント一覧ダッシュボードをセットアップします。
 
 ### イベントデータ
 -   **タイトル** (必須)
 -   **日時** (必須)
+-   **場所** (任意)
 -   **イベントURL** (任意)
 -   **メッセージリンク** (任意)
+
+#### イベント一覧の表示例
+```
+## **技術勉強会**
+📅 2025/11/15 19:00
+🌐 @渋谷
+https://example.com/event
+```
 
 ## 🛠️ 使用技術 (AWS Stack)
 
@@ -164,25 +174,6 @@ Lambdaのコードとは別に登録スクリプトを実行します。
 
 ### AWS認証
 OIDC (OpenID Connect) を使用してAWSに認証します。事前に `github-actions-role` IAMロールの設定が必要です。
-
-#### 必要なIAM権限
-GitHub ActionsロールのIAMポリシーに以下の権限が必要です：
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ssm:PutParameter",
-                "ssm:GetParameter"
-            ],
-            "Resource": "arn:aws:ssm:*:*:parameter/discord-event-bot/*"
-        }
-    ]
-}
-```
 
 ## 🤝 貢献 (Contribution)
 

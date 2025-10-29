@@ -1,6 +1,7 @@
 export interface EventOptions {
     title: string;
     datetime: string;
+    location?: string;
     url?: string;
     message_link?: string;
 }

@@ -17,9 +17,15 @@ export const DISCORD_COMMANDS = [
                     },
                     {
                         name: "datetime",
-                        description: "イベントの日時 (yyyy/mm/dd)",
+                        description: "イベントの日時 (例: 2025/10/29 14:30)",
                         type: 3, // STRING
                         required: true
+                    },
+                    {
+                        name: "location",
+                        description: "イベントの場所（または vc チャンネルリンク)",
+                        type: 3, // STRING
+                        required: false
                     },
                     {
                         name: "url",
@@ -50,6 +56,49 @@ export const DISCORD_COMMANDS = [
                         description: "削除するイベントのID",
                         type: 3, // STRING
                         required: true
+                    }
+                ]
+            },
+            {
+                name: "update",
+                description: "既存のイベントを更新",
+                type: 1, // SUB_COMMAND
+                options: [
+                    {
+                        name: "event_id",
+                        description: "更新するイベントのID",
+                        type: 3, // STRING
+                        required: true
+                    },
+                    {
+                        name: "title",
+                        description: "新しいタイトル（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "datetime",
+                        description: "新しい日時（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "location",
+                        description: "新しい場所（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "url",
+                        description: "新しいURL（省略可）",
+                        type: 3, // STRING
+                        required: false
+                    },
+                    {
+                        name: "message_link",
+                        description: "新しいメッセージリンク（省略可）",
+                        type: 3, // STRING
+                        required: false
                     }
                 ]
             },
