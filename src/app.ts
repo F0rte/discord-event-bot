@@ -3,6 +3,7 @@ import { verifyRequest, sendMessage, editMessage } from "./services/discord.js"
 import { addEvent, deleteEvent, listEvents, getConfig, saveConfig } from "./services/database.js";
 import { InteractionResponseType } from "discord-interactions";
 import type { EventOptions, Event } from "./types.js";
+import { getDetailedErrorMessage } from "./utils/errorMessages.js";
 
 // 定数定義
 const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
@@ -100,17 +101,7 @@ export const handler = async (
                         });
                     } catch (err) {
                         console.error("Setup error:", err);
-                        let errorMessage = "❌ セットアップ中にエラーが発生しました。";
-                        
-                        if (err instanceof Error) {
-                            if (err.message.includes('channels') || err.message.includes('sendMessage')) {
-                                errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
-                            } else if (err.message.includes('DynamoDB') || err.message.includes('saveConfig')) {
-                                errorMessage = "❌ 設定の保存に失敗しました。データベース接続を確認してください。";
-                            } else if (err.message.includes('token') || err.message.includes('SSM')) {
-                                errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
-                            }
-                        }
+                        const errorMessage = getDetailedErrorMessage(err, 'setup');
                         
                         return buildResponse({
                             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -137,15 +128,7 @@ export const handler = async (
                         });
                     } catch (err) {
                         console.error("Add event error:", err);
-                        let errorMessage = "❌ イベント追加中にエラーが発生しました。";
-                        
-                        if (err instanceof Error) {
-                            if (err.message.includes('DynamoDB')) {
-                                errorMessage = "❌ イベントの保存に失敗しました。";
-                            } else if (err.message.includes('dashboard') || err.message.includes('edit')) {
-                                errorMessage = "❌ ダッシュボードの更新に失敗しました。";
-                            }
-                        }
+                        const errorMessage = getDetailedErrorMessage(err, 'add');
                         
                         return buildResponse({
                             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -177,15 +160,7 @@ export const handler = async (
                         });
                     } catch (err) {
                         console.error("Delete event error:", err);
-                        let errorMessage = "❌ イベント削除中にエラーが発生しました。";
-                        
-                        if (err instanceof Error) {
-                            if (err.message.includes('DynamoDB')) {
-                                errorMessage = "❌ イベントの削除に失敗しました。";
-                            } else if (err.message.includes('dashboard') || err.message.includes('edit')) {
-                                errorMessage = "❌ ダッシュボードの更新に失敗しました。";
-                            }
-                        }
+                        const errorMessage = getDetailedErrorMessage(err, 'delete');
                         
                         return buildResponse({
                             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
