@@ -9,8 +9,7 @@ const DASHBOARD_CONFIG_SUFFIX = '_dashboard_config';
 const ADMIN_DASHBOARD_CONFIG = 'admin_dashboard_config';
 const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
 
-// バックグラウンド処理を管理するPromise配列
-let pendingTasks: Promise<any>[] = [];
+
 
 
 
@@ -28,9 +27,9 @@ export const handler = async (
     event: APIGatewayProxyEventV2,
     context: any
 ): Promise<APIGatewayProxyResultV2> => {
-    // Lambda関数がすべてのPromiseの完了を待機するように設定
-    // これにより、DEFERRED応答後のバックグラウンド処理が確実に完了する
-    context.callbackWaitsForEmptyEventLoop = true;
+    // Lambda関数が応答を返した後、バックグラウンド処理を継続できるように設定
+    // false: イベントループに未解決のPromiseがあってもLambda終了を許可
+    context.callbackWaitsForEmptyEventLoop = false;
     
     // Header, Body取得
     const signature = event.headers["x-signature-ed25519"] || "";
@@ -136,21 +135,13 @@ export const handler = async (
                         }
                     })();
                     
-                    // Lambdaが待機するようにPromiseを登録
-                    pendingTasks.push(setupPromise.catch(console.error));
+                    // バックグラウンド処理を開始（awaitしない）
+                    setupPromise.catch(console.error);
                     
-                    // バックグラウンド処理の完了を待機してから応答を返す
-                    const deferredResponse = buildResponse({
+                    // 即座にDEFERRED応答を返す（3秒ルール対応）
+                    return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
-                    
-                    // すべてのバックグラウンドタスクの完了を待機
-                    if (pendingTasks.length > 0) {
-                        await Promise.allSettled(pendingTasks);
-                        pendingTasks = []; // リセット
-                    }
-                    
-                    return deferredResponse;
                 }
 
                 if (subCommand === "add") {
@@ -186,21 +177,13 @@ export const handler = async (
                         }
                     })();
                     
-                    // Lambdaが待機するようにPromiseを登録
-                    pendingTasks.push(addPromise.catch(console.error));
+                    // バックグラウンド処理を開始（awaitしない）
+                    addPromise.catch(console.error);
                     
-                    // バックグラウンド処理の完了を待機してから応答を返す
-                    const deferredResponse = buildResponse({
+                    // 即座にDEFERRED応答を返す（3秒ルール対応）
+                    return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
-                    
-                    // すべてのバックグラウンドタスクの完了を待機
-                    if (pendingTasks.length > 0) {
-                        await Promise.allSettled(pendingTasks);
-                        pendingTasks = []; // リセット
-                    }
-                    
-                    return deferredResponse;
                 }
 
                 if (subCommand === "delete") {
@@ -242,21 +225,13 @@ export const handler = async (
                         }
                     })();
                     
-                    // Lambdaが待機するようにPromiseを登録
-                    pendingTasks.push(deletePromise.catch(console.error));
+                    // バックグラウンド処理を開始（awaitしない）
+                    deletePromise.catch(console.error);
                     
-                    // バックグラウンド処理の完了を待機してから応答を返す
-                    const deferredResponse = buildResponse({
+                    // 即座にDEFERRED応答を返す（3秒ルール対応）
+                    return buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
-                    
-                    // すべてのバックグラウンドタスクの完了を待機
-                    if (pendingTasks.length > 0) {
-                        await Promise.allSettled(pendingTasks);
-                        pendingTasks = []; // リセット
-                    }
-                    
-                    return deferredResponse;
                 }
             }
         } catch (err: unknown) {
