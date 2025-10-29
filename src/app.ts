@@ -115,13 +115,15 @@ export const handler = async (
                             
                             // より具体的なエラーメッセージを提供
                             if (err instanceof Error) {
-                                if (err.message.includes('sendMessage') || err.message.includes('channels')) {
+                                if (err.message.includes('sendMessage timeout')) {
+                                    errorMessage = "❌ ダッシュボードメッセージの送信がタイムアウトしました。チャンネルの権限を確認してください。";
+                                } else if (err.message.includes('sendMessage') || err.message.includes('channels')) {
                                     errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
                                 } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
                                     errorMessage = "❌ 設定の保存に失敗しました。";
                                 } else if (err.message.includes('SSM') || err.message.includes('token')) {
                                     errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
-                                } else if (err.message.includes('timeout') || err.message.includes('Lambda')) {
+                                } else if (err.message.includes('timeout')) {
                                     errorMessage = "❌ 処理がタイムアウトしました。管理者に連絡してください。";
                                 }
                             }
@@ -137,10 +139,18 @@ export const handler = async (
                     // Lambdaが待機するようにPromiseを登録
                     pendingTasks.push(setupPromise.catch(console.error));
                     
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
+                    // バックグラウンド処理の完了を待機してから応答を返す
+                    const deferredResponse = buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
+                    
+                    // すべてのバックグラウンドタスクの完了を待機
+                    if (pendingTasks.length > 0) {
+                        await Promise.allSettled(pendingTasks);
+                        pendingTasks = []; // リセット
+                    }
+                    
+                    return deferredResponse;
                 }
 
                 if (subCommand === "add") {
@@ -179,10 +189,18 @@ export const handler = async (
                     // Lambdaが待機するようにPromiseを登録
                     pendingTasks.push(addPromise.catch(console.error));
                     
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
+                    // バックグラウンド処理の完了を待機してから応答を返す
+                    const deferredResponse = buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
+                    
+                    // すべてのバックグラウンドタスクの完了を待機
+                    if (pendingTasks.length > 0) {
+                        await Promise.allSettled(pendingTasks);
+                        pendingTasks = []; // リセット
+                    }
+                    
+                    return deferredResponse;
                 }
 
                 if (subCommand === "delete") {
@@ -227,10 +245,18 @@ export const handler = async (
                     // Lambdaが待機するようにPromiseを登録
                     pendingTasks.push(deletePromise.catch(console.error));
                     
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
+                    // バックグラウンド処理の完了を待機してから応答を返す
+                    const deferredResponse = buildResponse({
                         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
                     });
+                    
+                    // すべてのバックグラウンドタスクの完了を待機
+                    if (pendingTasks.length > 0) {
+                        await Promise.allSettled(pendingTasks);
+                        pendingTasks = []; // リセット
+                    }
+                    
+                    return deferredResponse;
                 }
             }
         } catch (err: unknown) {
@@ -246,12 +272,6 @@ export const handler = async (
         }
     }
 
-    // すべてのバックグラウンドタスクの完了を待機
-    if (pendingTasks.length > 0) {
-        await Promise.allSettled(pendingTasks);
-        pendingTasks = []; // 次回実行用にリセット
-    }
-    
     return { statusCode: 404, body: "Not Found" };
 };
 
@@ -328,20 +348,18 @@ const createDashboardMessagesAndSaveConfig = async (
     adminChannelId: string,
     publicChannelId: string
 ): Promise<void> => {
-    // 管理者用ダッシュボード作成
-    const adminMessage = await sendMessage(
-        adminChannelId, 
-        "🔧 管理者用イベント一覧を読み込み中...", 
-        4 // SUPPRESS_EMBEDS
-    );
+    // 管理者用ダッシュボード作成（タイムアウト付き）
+    const adminMessage = await Promise.race([
+        sendMessage(adminChannelId, "🔧 管理者用イベント一覧を読み込み中...", 4),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Admin sendMessage timeout')), 10000))
+    ]) as { id: string };
     await saveConfig(ADMIN_DASHBOARD_CONFIG, adminChannelId, adminMessage.id);
     
-    // 全体用ダッシュボード作成
-    const publicMessage = await sendMessage(
-        publicChannelId, 
-        "📅 イベント一覧を読み込み中...", 
-        4 // SUPPRESS_EMBEDS
-    );
+    // 全体用ダッシュボード作成（タイムアウト付き）
+    const publicMessage = await Promise.race([
+        sendMessage(publicChannelId, "📅 イベント一覧を読み込み中...", 4),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Public sendMessage timeout')), 10000))
+    ]) as { id: string };
     await saveConfig(PUBLIC_DASHBOARD_CONFIG, publicChannelId, publicMessage.id);
     
     // ダッシュボード更新
