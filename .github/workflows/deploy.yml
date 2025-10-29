@@ -6,11 +6,14 @@ on:
       - closed
     branches:
       - main
+  push:
+    branches:
+      - feature/setup-commands
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    # if: github.event.pull_request.merged == true
 
     permissions:
       id-token: write
