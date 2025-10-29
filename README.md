@@ -165,6 +165,25 @@ Lambdaのコードとは別に登録スクリプトを実行します。
 ### AWS認証
 OIDC (OpenID Connect) を使用してAWSに認証します。事前に `github-actions-role` IAMロールの設定が必要です。
 
+#### 必要なIAM権限
+GitHub ActionsロールのIAMポリシーに以下の権限が必要です：
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:PutParameter",
+                "ssm:GetParameter"
+            ],
+            "Resource": "arn:aws:ssm:*:*:parameter/discord-event-bot/*"
+        }
+    ]
+}
+```
+
 ## 🤝 貢献 (Contribution)
 
 コミットメッセージは以下の形式に従ってください。

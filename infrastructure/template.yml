@@ -6,6 +6,10 @@ Parameters:
     Type: String
     Description: Discord Bot Public Key from Developer Portal
     NoEcho: true
+  DiscordApplicationId:
+    Type: String
+    Description: Discord Application ID from Developer Portal
+    NoEcho: true
   
 Resources:
   LambdaExecutionRole:
@@ -40,6 +44,14 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:GetItem
                 Resource: !GetAtt EventsTable.Arn
+        - PolicyName: LambdaSSMPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/discord-event-bot/DISCORD_BOT_TOKEN"
 
   DiscordBotFunction:
     Type: AWS::Lambda::Function
@@ -53,7 +65,9 @@ Resources:
       Environment:
         Variables:
           DISCORD_PUBLIC_KEY: !Ref DiscordPublicKey
+          DISCORD_APPLICATION_ID: !Ref DiscordApplicationId
           DYNAMODB_TABLE_NAME: !Ref EventsTable
+          SSM_PARAMETER_NAME_BOT_TOKEN: "/discord-event-bot/DISCORD_BOT_TOKEN"
 
   HttpApi:
     Type: AWS::ApiGatewayV2::Api

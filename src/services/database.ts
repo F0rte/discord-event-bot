@@ -4,6 +4,7 @@ import {
     ScanCommand,
     PutCommand,
     DeleteCommand,
+    GetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { Event, EventOptions } from "../types.js";
 import crypto from "node:crypto";
@@ -54,4 +55,40 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
     });
     await docClient.send(command);
     return true;
+};
+
+/**
+ * 設定を取得
+ */
+export const getConfig = async (configId: string): Promise<{ channelId: string; messageId: string } | null> => {
+    const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { id: configId },
+    });
+    const response = await docClient.send(command);
+    
+    if (!response.Item) {
+        return null;
+    }
+    
+    return {
+        channelId: response.Item.channelId,
+        messageId: response.Item.messageId,
+    };
+};
+
+/**
+ * 設定を保存
+ */
+export const saveConfig = async (configId: string, channelId: string, messageId: string): Promise<void> => {
+    const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+            id: configId,
+            channelId,
+            messageId,
+            createdAt: new Date().toISOString(),
+        },
+    });
+    await docClient.send(command);
 };
