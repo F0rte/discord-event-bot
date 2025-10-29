@@ -17,7 +17,7 @@ export const DISCORD_COMMANDS = [
                     },
                     {
                         name: "datetime",
-                        description: "イベントの日時",
+                        description: "イベントの日時 (yyyy/mm/dd)",
                         type: 3, // STRING
                         required: true
                     },

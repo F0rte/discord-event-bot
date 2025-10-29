@@ -209,7 +209,7 @@ const generateEventListContent = async (isAdmin: boolean): Promise<string> => {
         : "**📅 イベント一覧**\n\n";
 
     content += actualEvents.map((event) => {
-        let eventText = `**${event.title}** (${event.datetime})`;
+        let eventText = `##**${event.title}**\n:calendar: ${event.datetime}`;
         if (isAdmin) {
             eventText += `\nID: \`${event.id}\``;
         }
