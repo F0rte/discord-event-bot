@@ -12,6 +12,9 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
+if (!TABLE_NAME) {
+    throw new Error("Environment variable DYNAMODB_TABLE_NAME is not set. Please set it to the name of your DynamoDB table.");
+}
 
 /**
  * イベント一覧取得
