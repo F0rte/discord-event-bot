@@ -24,12 +24,9 @@ const PUBLIC_DASHBOARD_CONFIG = 'public_dashboard_config';
  * - /events delete: イベントを削除し、ダッシュボードを更新
  */
 export const handler = async (
-    event: APIGatewayProxyEventV2,
-    context: any
+    event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> => {
-    // Lambda関数が応答を返した後、バックグラウンド処理を継続できるように設定
-    // false: イベントループに未解決のPromiseがあってもLambda終了を許可
-    context.callbackWaitsForEmptyEventLoop = false;
+
     
     // Header, Body取得
     const signature = event.headers["x-signature-ed25519"] || "";
@@ -97,51 +94,32 @@ export const handler = async (
                     const adminChannelId = options.admin_channel;
                     const publicChannelId = options.public_channel;
                     
-                    // バックグラウンドで非同期処理を実行
-                    const setupPromise = (async () => {
-                        try {
-                            await createDashboardMessagesAndSaveConfig(adminChannelId, publicChannelId);
-                            
-                            // インタラクション応答を更新
-                            await editInteractionResponse(
-                                body.token,
-                                "✅ ダッシュボードのセットアップが完了しました！"
-                            );
-                        } catch (err) {
-                            console.error("Setup error:", err);
-                            
-                            let errorMessage = "❌ セットアップ中にエラーが発生しました。";
-                            
-                            // より具体的なエラーメッセージを提供
-                            if (err instanceof Error) {
-                                if (err.message.includes('sendMessage timeout')) {
-                                    errorMessage = "❌ ダッシュボードメッセージの送信がタイムアウトしました。チャンネルの権限を確認してください。";
-                                } else if (err.message.includes('sendMessage') || err.message.includes('channels')) {
-                                    errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
-                                } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
-                                    errorMessage = "❌ 設定の保存に失敗しました。";
-                                } else if (err.message.includes('SSM') || err.message.includes('token')) {
-                                    errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
-                                } else if (err.message.includes('timeout')) {
-                                    errorMessage = "❌ 処理がタイムアウトしました。管理者に連絡してください。";
-                                }
-                            }
-                            
-                            try {
-                                await editInteractionResponse(body.token, errorMessage);
-                            } catch (editErr) {
-                                console.error("Failed to edit interaction response:", editErr);
+                    try {
+                        await createDashboardMessagesAndSaveConfig(adminChannelId, publicChannelId);
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: "✅ ダッシュボードのセットアップが完了しました！" },
+                        });
+                    } catch (err) {
+                        console.error("Setup error:", err);
+                        
+                        let errorMessage = "❌ セットアップ中にエラーが発生しました。";
+                        if (err instanceof Error) {
+                            if (err.message.includes('sendMessage') || err.message.includes('channels')) {
+                                errorMessage = "❌ ダッシュボードメッセージの作成に失敗しました。チャンネルの権限を確認してください。";
+                            } else if (err.message.includes('saveConfig') || err.message.includes('DynamoDB')) {
+                                errorMessage = "❌ 設定の保存に失敗しました。";
+                            } else if (err.message.includes('SSM') || err.message.includes('token')) {
+                                errorMessage = "❌ Bot認証に失敗しました。設定を確認してください。";
                             }
                         }
-                    })();
-                    
-                    // バックグラウンド処理を開始（awaitしない）
-                    setupPromise.catch(console.error);
-                    
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
-                        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-                    });
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: errorMessage },
+                        });
+                    }
                 }
 
                 if (subCommand === "add") {
@@ -150,44 +128,26 @@ export const handler = async (
                         return acc;
                     }, {}) as EventOptions;
                 
-                    // バックグラウンドで非同期処理を実行
-                    const addPromise = (async () => {
-                        try {
-                            const newEvent = await addEvent(options);
-                            
-                            // ダッシュボード更新
-                            await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
-                            await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
-                            
-                            // インタラクション応答を更新
-                            await editInteractionResponse(
-                                body.token,
-                                `✅ イベント **${newEvent.title}**を追加し、ダッシュボードを更新しました (ID: \`${newEvent.id}\`)`
-                            );
-                        } catch (err) {
-                            console.error("Add event error:", err);
-                            try {
-                                await editInteractionResponse(
-                                    body.token,
-                                    "❌ イベント追加中にエラーが発生しました。"
-                                );
-                            } catch (editErr) {
-                                console.error("Failed to edit interaction response:", editErr);
-                            }
-                        }
-                    })();
-                    
-                    // バックグラウンド処理を開始（awaitしない）
-                    addPromise.catch(console.error);
-                    
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
-                        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-                    });
+                    try {
+                        const newEvent = await addEvent(options);
+                        
+                        await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+                        await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: `✅ イベント **${newEvent.title}**を追加し、ダッシュボードを更新しました (ID: \`${newEvent.id}\`)` },
+                        });
+                    } catch (err) {
+                        console.error("Add event error:", err);
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: "❌ イベント追加中にエラーが発生しました。" },
+                        });
+                    }
                 }
 
                 if (subCommand === "delete") {
-                    // Guard checks for nested options
                     const optionsArr = Array.isArray(body.data.options) ? body.data.options : [];
                     const subOptionsArr = optionsArr.length > 0 && Array.isArray(optionsArr[0].options) ? optionsArr[0].options : [];
                     if (subOptionsArr.length === 0 || typeof subOptionsArr[0].value === "undefined") {
@@ -198,40 +158,23 @@ export const handler = async (
                     }
                     const id = subOptionsArr[0].value;
                     
-                    // バックグラウンドで非同期処理を実行
-                    const deletePromise = (async () => {
-                        try {
-                            await deleteEvent(id);
-                            
-                            // ダッシュボード更新
-                            await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
-                            await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
-                            
-                            // インタラクション応答を更新
-                            await editInteractionResponse(
-                                body.token,
-                                `✅ イベントを削除し、ダッシュボードを更新しました (ID: \`${id}\`)`
-                            );
-                        } catch (err) {
-                            console.error("Delete event error:", err);
-                            try {
-                                await editInteractionResponse(
-                                    body.token,
-                                    "❌ イベント削除中にエラーが発生しました。"
-                                );
-                            } catch (editErr) {
-                                console.error("Failed to edit interaction response:", editErr);
-                            }
-                        }
-                    })();
-                    
-                    // バックグラウンド処理を開始（awaitしない）
-                    deletePromise.catch(console.error);
-                    
-                    // 即座にDEFERRED応答を返す（3秒ルール対応）
-                    return buildResponse({
-                        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-                    });
+                    try {
+                        await deleteEvent(id);
+                        
+                        await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
+                        await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
+                        
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: `✅ イベントを削除し、ダッシュボードを更新しました (ID: \`${id}\`)` },
+                        });
+                    } catch (err) {
+                        console.error("Delete event error:", err);
+                        return buildResponse({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: "❌ イベント削除中にエラーが発生しました。" },
+                        });
+                    }
                 }
             }
         } catch (err: unknown) {
@@ -323,21 +266,20 @@ const createDashboardMessagesAndSaveConfig = async (
     adminChannelId: string,
     publicChannelId: string
 ): Promise<void> => {
-    // 管理者用ダッシュボード作成（タイムアウト付き）
-    const adminMessage = await Promise.race([
-        sendMessage(adminChannelId, "🔧 管理者用イベント一覧を読み込み中...", 4),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Admin sendMessage timeout')), 10000))
-    ]) as { id: string };
+    const adminMessage = await sendMessage(
+        adminChannelId, 
+        "🔧 管理者用イベント一覧を読み込み中...", 
+        4
+    );
     await saveConfig(ADMIN_DASHBOARD_CONFIG, adminChannelId, adminMessage.id);
     
-    // 全体用ダッシュボード作成（タイムアウト付き）
-    const publicMessage = await Promise.race([
-        sendMessage(publicChannelId, "📅 イベント一覧を読み込み中...", 4),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Public sendMessage timeout')), 10000))
-    ]) as { id: string };
+    const publicMessage = await sendMessage(
+        publicChannelId, 
+        "📅 イベント一覧を読み込み中...", 
+        4
+    );
     await saveConfig(PUBLIC_DASHBOARD_CONFIG, publicChannelId, publicMessage.id);
     
-    // ダッシュボード更新
     await updateDashboardMessage(ADMIN_DASHBOARD_CONFIG);
     await updateDashboardMessage(PUBLIC_DASHBOARD_CONFIG);
 };
